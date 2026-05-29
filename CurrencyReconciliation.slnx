@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CurrencyReconciliation/CurrencyReconciliation.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>
