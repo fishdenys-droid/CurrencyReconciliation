@@ -1,39 +1,38 @@
-﻿using CurrencyReconciliation.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 using System.Xml.Serialization;
+using CurrencyReconciliation.Models;
 
-namespace CurrencyReconciliation.Clients
+namespace CurrencyReconciliation.Clients;
+
+public class CbrClient : ICbrClient
 {
-    public class CbrClient
+    public const string ClientName = nameof(CbrClient);
+
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public CbrClient(IHttpClientFactory httpClientFactory)
     {
-        private readonly HttpClient _httpClient;
-        private const string Url = "https://www.cbr.ru/scripts/XML_daily.asp";
+        _httpClientFactory = httpClientFactory;
+    }
 
-        public CbrClient(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-        }
+    public async Task<ValCurs> GetRatesAsync()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-        public async Task<ValCurs> GetRatesAsync()
-        {
+        var httpClient = _httpClientFactory.CreateClient(ClientName);
 
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        using var response = await httpClient.GetAsync("/scripts/XML_daily.asp");
+        response.EnsureSuccessStatusCode();
 
-            using var response = await _httpClient.GetAsync(Url);
-            response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync();
 
-            await using var stream = await response.Content.ReadAsStreamAsync();
+        var serializer = new XmlSerializer(typeof(ValCurs));
 
-            var serializer = new XmlSerializer(typeof(ValCurs));
+        var result = serializer.Deserialize(stream) as ValCurs;
 
-            var result = serializer.Deserialize(stream) as ValCurs;
+        if (result is null)
+            throw new InvalidOperationException("Не удалось распарсить ответ ЦБ");
 
-            if (result is null)
-                throw new InvalidOperationException("Не удалось распарсить ответ ЦБ");
-
-            return result;
-        }
+        return result;
     }
 }

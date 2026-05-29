@@ -1,7 +1,4 @@
 ﻿using CurrencyReconciliation.Clients;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CurrencyReconciliation.Services
 {
@@ -9,23 +6,24 @@ namespace CurrencyReconciliation.Services
     {
         Task<List<ReconciliationResult>> ReconcileRatesAsync();
     }
+
     public class CurrencyReconciliationService : ICurrencyReconciliationService
     {
-        private readonly CbrClient _cbr;
-        private readonly ExternalRateClient _external;
+        private readonly ICbrClient _cbr;
+        private readonly IExternalRateClient _external;
 
         private static readonly string[] Currencies = ["USD", "EUR", "GBP"];
 
         public CurrencyReconciliationService(
-            CbrClient cbr,
-            ExternalRateClient external)
+            ICbrClient cbr,
+            IExternalRateClient external)
         {
             _cbr = cbr;
             _external = external;
         }
 
         public async Task<List<ReconciliationResult>> ReconcileRatesAsync()
-        {            
+        {
             var cbrTask = _cbr.GetRatesAsync();
             var extTask = _external.GetRatesAsync();
 

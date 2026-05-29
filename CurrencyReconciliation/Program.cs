@@ -1,9 +1,27 @@
 ﻿using CurrencyReconciliation.Clients;
+using CurrencyReconciliation.Services;
+using Microsoft.Extensions.DependencyInjection;
 
-var httpClient = new HttpClient();
+var services = new ServiceCollection();
 
-var cbrClient = new CbrClient(httpClient);
-var externalClient = new ExternalRateClient(httpClient);
+services.AddHttpClient(CbrClient.ClientName, client =>
+{
+    client.BaseAddress = new Uri("https://www.cbr.ru");
+});
+
+services.AddHttpClient(ExternalRateClient.ClientName, client =>
+{
+    client.BaseAddress = new Uri("https://open.er-api.com");
+});
+
+services.AddTransient<ICbrClient, CbrClient>();
+services.AddTransient<IExternalRateClient, ExternalRateClient>();
+services.AddTransient<ICurrencyReconciliationService, CurrencyReconciliationService>();
+
+await using var provider = services.BuildServiceProvider();
+
+var cbrClient = provider.GetRequiredService<ICbrClient>();
+var externalClient = provider.GetRequiredService<IExternalRateClient>();
 
 var cbrRates = await cbrClient.GetRatesAsync();
 var externalRates = await externalClient.GetRatesAsync();

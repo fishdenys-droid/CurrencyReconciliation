@@ -3,19 +3,24 @@ using CurrencyReconciliation.Models;
 
 namespace CurrencyReconciliation.Clients;
 
-public class ExternalRateClient
+public class ExternalRateClient : IExternalRateClient
 {
-    private readonly HttpClient _httpClient;
-    private const string Url = "https://open.er-api.com/v6/latest/USD";
+    public const string ClientName = nameof(ExternalRateClient);
 
-    public ExternalRateClient(HttpClient httpClient)
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public ExternalRateClient(IHttpClientFactory httpClientFactory)
     {
-        _httpClient = httpClient;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<ExternalRatesResponse> GetRatesAsync()
     {
-        var json = await _httpClient.GetStringAsync(Url);
+        var httpClient = _httpClientFactory.CreateClient(ClientName);
+
+        var json = await httpClient.GetStringAsync(
+            "https://open.er-api.com/v6/latest/USD"
+        );
 
         var result = JsonSerializer.Deserialize<ExternalRatesResponse>(json);
 
@@ -23,7 +28,7 @@ public class ExternalRateClient
             throw new InvalidOperationException("Failed to parse external API");
 
         if (result.Result != "success")
-            throw new InvalidOperationException("The external API returned an error.");
+            throw new InvalidOperationException("External API error");
 
         return result;
     }
